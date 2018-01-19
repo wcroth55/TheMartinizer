@@ -22,7 +22,7 @@
 #   It then displays (on stdout) the lines that have been added or changed 
 #   that are NOT fully covered by unit-tests.
 #
-#   This script depends on the separate Java project ChangedCodeScanner,
+#   This script depends on the separate Java project TheMartinizer,
 #   which must have been built into a jar and deployed in the same
 #   directory as this script.  (It just reformats the git output into
 #   a more useable format.)
@@ -32,10 +32,13 @@
 #   on the end of the martinizer command line.  If you only specify the
 #   old hash, then the Martinizer looks at everything in the project
 #   that is a java file.  (It ignores unit-test classes: see ClassChangeRecord
-#   in the ChangedCodeScanner project for details.)
+#   in TheMartinizer project for details.)
+#
+#   This script is released as "open source", as part of the entire TheMartinizer
+#   package.  See the LICENSE file for details.
 #
 #   Charles Roth 2014-12-29  (original Cobertura version)
-#   Charles Roth 2018-01-02  (Jacoco version, expanded and made more flexible)
+#   Charles Roth 2018-01-02  (Jacoco version, expanded and made more flexible, and published)
 #--------------------------------------------------------------------------
 
 if test "x$1" = "x"; then
@@ -49,7 +52,7 @@ shift
 newhash=`git rev-parse HEAD`
 
 git diff --word-diff=porcelain $oldhash $newhash  | \
-   (cd $bin; java -jar ChangedCodeScanner.jar $@) | \
+   (cd $bin; java -jar TheMartinizer.jar $@) | \
    (while read project package class lines; do
        found=""
        for line in $lines; do
