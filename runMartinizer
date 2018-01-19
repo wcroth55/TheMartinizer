@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+#---runMartinizer:  Run the martinizer on a project.
+#
+#   Assumes:
+#   1. The named project is already cloned under $HOME/MARTINIZER/projectName, 
+#   2. The project has an ant build.xml, with a 'coverage' target that
+#      compiles and runs the tests and the Jacoco HTML coverage report.
+#
+#   Uses $HOME/bin/martinizer to actually do the work.
+#
+#   Typically run on some regular schedule (e.g. hourly)
+#   from cron.
+#
+#   Charles Roth, 2018-01-05
+#------------------------------------------------------------------
+
+if test "x$1" = "x"; then
+   echo "Usage: runMartinizer projectName [emailAddress]" >&2
+   exit
+fi
+
+projectDir=$HOME/MARTINIZER/$1
+if test ! -d $projectDir; then
+   echo "Project $projectDir does not exist." >&2
+   exit
+fi
+
+emailAddress="$2"
+if test "x$emailAddress" = "x"; then
+   emailAddress="croth@thedance.net"
+fi
+
+   
+. $HOME/.bash_profile
+
+cd $projectDir
+
+if test ! -s _oldHash; then
+   git rev-parse HEAD >_oldHash
+fi
+   
+oldHash=`cat _oldHash`
+
+git fetch     origin
+git pull
+
+now=`date +"%Y-%m-%d %H:%M"`
+
+newHash=`git rev-parse HEAD`
+if test "$newHash" = "$oldHash"; then
+   exit
+fi
+
+git log --pretty=format:"%H %ae %ce %s" $oldHash..$newHash >_log
+echo "" >>_log
+
+ant coverage >stdout 2>stderr
+
+echo "$newHash"    >_oldHash
+
+#---Send Martinizer report, if any changed lines were not covered by tests.
+tmpMartin=/tmp/Martin$$
+rm -f $tmpMartin
+$HOME/bin/martinizer $oldHash >$tmpMartin
+if test -s $tmpMartin; then
+   (echo "$1 Martinizer report on changed code not covered by unit-tests:"
+    echo ""
+    cat $tmpMartin
+   ) | mail -s "$1: Martinizer report" $emailAddress 2>/dev/null
+fi
+
+rm -f $tmpMartin

@@ -1,0 +1,71 @@
+#!/bin/sh
+#
+#---martinizer: detect Java code changes that are not covered by unit-tests.
+#
+#   "The Martinizer" is named in honor of both the dry-cleaning process
+#   ("One Hour Martinizing" [tm]), and "Uncle Bob" Martin, author of 
+#   the wonderful book "Clean Code".  It uses 'git' and 'Jacoco' to
+#   find said changes.
+#
+#   The Martinizer assumes:
+#      1. You are in the top-level directory of a checked-out-from-git
+#         Java project.
+#      2. Your source directories end in "/java/" followed by the 
+#         package structure (e.g. "src/main/java/com/mycompany").
+#      3. You have the hash of the earlier commit you want to compare to.
+#      4. You have just run the unit-tests with Jacoco code-coverage
+#         turned on, and run the Jacoco report with HTML output.
+#         The output must be in a sub-directory called "coverage".
+#
+#   The Martinizer then compares the git log of the current check-out
+#   with the earlier hash, and cross-references it with the Jacoco output.
+#   It then displays (on stdout) the lines that have been added or changed 
+#   that are NOT fully covered by unit-tests.
+#
+#   This script depends on the separate Java project ChangedCodeScanner,
+#   which must have been built into a jar and deployed in the same
+#   directory as this script.  (It just reformats the git output into
+#   a more useable format.)
+#
+#   If your project has "sub-projects" underneath it, you may also
+#   specify the space-separated list of sub-projects you want to examine
+#   on the end of the martinizer command line.  If you only specify the
+#   old hash, then the Martinizer looks at everything in the project
+#   that is a java file.  (It ignores unit-test classes: see ClassChangeRecord
+#   in the ChangedCodeScanner project for details.)
+#
+#   Charles Roth 2014-12-29  (original Cobertura version)
+#   Charles Roth 2018-01-02  (Jacoco version, expanded and made more flexible)
+#--------------------------------------------------------------------------
+
+if test "x$1" = "x"; then
+   echo "Usage: martinizer old-hash [sub-project1 sub-project2 ...]" >&2
+   exit
+fi
+
+bin=`dirname $0`
+oldhash="$1"
+shift
+newhash=`git rev-parse HEAD`
+
+git diff --word-diff=porcelain $oldhash $newhash  | \
+   (cd $bin; java -jar ChangedCodeScanner.jar $@) | \
+   (while read project package class lines; do
+       found=""
+       for line in $lines; do
+           if grep " class=\"[pn]c.*id=\"L$line\"" \
+                   $project/coverage/$package/$class.java.html >/dev/null 2>/dev/null; then
+              found="$found $line"
+           fi
+       done
+   
+       if test "x$found" != "x"; then
+          echo ""
+          echo "$package $class:"
+          path=`echo "$package" | sed "s/\./\//g"`
+          for line in $found; do
+             text=`sed "${line}q;d" $project/src/main/java/$path/$class.java`
+             echo "$line $text" | tr -d "\r"
+          done
+       fi
+    done)

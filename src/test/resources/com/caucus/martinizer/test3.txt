@@ -1,0 +1,44 @@
+diff --git a/WebApp/src/main/java/com/caucus/apps/onesearch/components/PageLayout.java b/WebApp/src/main/java/com/caucus/apps/onesearch/components/PageLayout.java
+index ba326c4..6dac507 100644
+--- a/WebApp/src/main/java/com/caucus/apps/onesearch/components/PageLayout.java
++++ b/WebApp/src/main/java/com/caucus/apps/onesearch/components/PageLayout.java
+@@ -338,11 +337,15 @@ public class PageLayout extends PageLayoutBasic {
+      return getSitesService().isCareerSite();
+~
+   }
+~
+
+~
++//   public String[] getCareerTechEdContext() {
+~
++//      String[] context = new String[2];
+~
++//      context[0] = "CareerTechEd";
+~
++//      context[1] = "0";
+~
++//      return context;
+~
++//   }
+
+~
+
+~
+   public String[] getCareerTechEdContext() {
+~
+-String[] context = new String[2];
+~
+-     context[0] = "CareerTechEd";
+~
+-     context[1] = "0";
+      return
+-context;
++new String [] {"CareerTechEd", "0"};
+
+~
+   }
+~
+
+~
+   public Object[] getPsycBooksContext() {
+~

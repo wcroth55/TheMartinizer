@@ -1,0 +1,216 @@
+<project name="TheMartinizer"
+         default="jar"
+         xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<property file="${user.home}/ant-global.properties" />
+
+	<echo message=" *************************************************************************" />
+	<echo message="  Reading Properties from file ${user.home}/ant-global.properties" />
+	<echo message="  Please see the following properties coming from this file: " />
+	<echoproperties prefix="pq" />
+	<echo message=" *************************************************************************" />
+
+
+	<!-- some variables used -->
+	<property name="java.dir"       value="${basedir}/src/main/java" />
+	<property name="test.dir"       value="${basedir}/src/test/java" />
+	<property name="resource.dir"   value="${basedir}/src/main/resources" />
+	<property name="testresource.dir"  value="${basedir}/src/test/resources" />
+
+	<property name="build.dir"      value="${basedir}/build" />
+	<property name="testreport.dir" value="${build.dir}/test/reports"/>
+	<property name="coverage.dir"   value="${basedir}/coverage"/>
+	<property name="lib.dir"        value="${build.dir}/lib" />
+	<property name="doc.dir"        value="${build.dir}/doc" />
+	<property name="classes.dir"    value="${build.dir}/classes" />
+	<property name="testclass.dir"  value="${build.dir}/test-classes"/>
+	<property name="out.instr.dir"  value="${basedir}/outinstr" />
+	<property name="emma.dir"       value="${cruisecontrol.dir}/lib" />
+
+	<property name="manifest.file" value="MANIFEST.MF" />
+	<property name="version.file" value="${basedir}/version.properties" />
+
+	<fileset id="core-jars" dir="${lib.dir}" />
+
+	<!-- runtime-jars:  Jars that need to go into the jar we will build  -->
+	<fileset id="runtime-jars" dir="${lib.dir}" includes="*.jar"/> 
+	
+	<path id="classpath.path">
+		<fileset dir="${classes.dir}" />
+		<fileset dir="${resource.dir}" includes="*.*" />
+		<fileset refid="core-jars" />
+	</path>
+
+	<path id="testclasspath.path">
+		<pathelement location="${classes.dir}" />
+		<fileset refid="core-jars" />
+		<pathelement location="${testclass.dir}" />
+		<fileset dir="${lib.dir}" includes="junit*.jar,easymock*.jar" />
+	</path>
+	
+	<path id="instr.path">
+		<pathelement location="${classes.dir}" />
+	</path>
+
+	<path id="emma.lib">
+		<pathelement location="${emma.dir}/emma.jar" />
+		<pathelement location="${emma.dir}/emma_ant.jar" />
+	</path>
+	
+	<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+	<!--  target: echo-classpaths -->
+	<target name="echo-jar-lists">
+		<pathconvert property="class-path"
+		             pathsep=" "
+		             targetos="unix">
+			<flattenmapper />
+			<fileset refid="core-jars" />
+		</pathconvert>
+		<echo message="core-jars[${class-path}]" />
+
+		<pathconvert property="test-jars-prop"
+		             pathsep=" "
+		             targetos="unix">
+			<flattenmapper />
+			<fileset refid="test-jars" />
+		</pathconvert>
+		<echo message="test-jars[${test-jars-prop}]" />
+	</target>
+
+	<!--  target: ivy-resolve -->
+	<target name="ivy-resolve"
+	        description="--> resolve and retrieve dependencies with ivy">
+		<ivy:retrieve pattern="${lib.dir}/[artifact]-[revision].[ext]"
+		              conf="default,master,build,test"
+		              type="jar" />
+	</target>
+
+	<!-- target: ivy-report -->
+	<target name="ivy-report"
+	        depends="ivy-resolve"
+	        description="--> generates an ivy dependency report">
+		<ivy:report todir="${build.dir}" />
+	</target>
+
+	<target name="compile"   depends="clean,ivy-resolve"   description="compile source">
+		<mkdir dir="${classes.dir}" />
+		<javac destdir="${classes.dir}"
+		       classpathref="classpath.path"
+		       debug="true"
+		       debuglevel="lines,vars,source">
+			<src path="${java.dir}" />
+		</javac>
+	</target>
+
+	<target name="compile-test" depends="compile" description="compile test classes">
+		<mkdir dir="${testclass.dir}"/>
+		<javac srcdir="${test.dir}" destdir="${testclass.dir}" classpathref="testclasspath.path" debug="true" encoding="utf-8" />
+	</target>
+
+	<target name="emma" description="turns on EMMA instrumentation/reporting" >
+		<property name="emma.enabled" value="true" />
+		<mkdir dir="${out.instr.dir}" />
+	</target>
+
+	<target name="test" depends="compile-test,emma">
+		<mkdir dir="${coverage.dir}" />
+		<emma enabled="${emma.enabled}">
+			<instr instrpathref="instr.path"
+					destdir="${out.instr.dir}"
+					metadatafile="${coverage.dir}/metadata.emma"
+					merge="false" />
+		</emma>
+		<!-- Copy resources into instrumented classes directory -->
+		<copy todir="${out.instr.dir}" failonerror="false">
+			<fileset dir="${resource.dir}" />
+			<fileset dir="${testresource.dir}" />
+		</copy>
+
+		<mkdir dir="${testreport.dir}"/>
+		<junit printsummary="on" failureproperty="unittest.failure" fork="true">
+			<sysproperty key="log4j.configuration" value="file:${testresource.dir}/log4j.properties" />
+			<classpath>
+				<pathelement location="${out.instr.dir}" />
+				<path refid="emma.lib" />
+				<path refid="testclasspath.path" />
+			</classpath>
+			<jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.emma" />
+
+			<formatter type="xml" />
+			<batchtest todir="${testreport.dir}">
+				<fileset dir="${testclass.dir}" includes="**/*Test.class" />
+			</batchtest>
+		</junit>
+
+		<emma enabled="${emma.enabled}">
+			<report sourcepath="${java.dir}">
+				<fileset dir="${coverage.dir}">
+					<include name="*.emma" />
+				</fileset>
+
+				<xml outfile="${coverage.dir}/coverage.xml" />
+			</report>
+		</emma>
+		<fail message="Unit tests failed" if="unittest.failure" />
+	</target>
+
+	<target name="jar-properties" description="Create jar properties">
+		<!-- create a property containing all .jar files, prefix lib/, and
+			 separated with a space -->
+		<pathconvert property="dependency.jar.versions"
+		             pathsep=" ">
+			<mapper>
+				<chainedmapper>
+					<!-- remove absolute path -->
+					<flattenmapper />
+				</chainedmapper>
+			</mapper>
+			<path>
+				<!-- list of jars minus [castor codegen / test] jars -->
+				<fileset refid="runtime-jars" />
+			</path>
+		</pathconvert>
+
+		<tstamp>
+			<format property="timestamp" pattern="MM/dd/yyyy hh:mm:ss a" locale="en,US" />
+		</tstamp>
+
+		<!-- define MANIFEST.MF -->
+		<manifest file="${manifest.file}">
+			<attribute name="Built-By" value="${user.name}" />
+			<attribute name="Main-Class" value="com.caucus.martinizer.ChangedCodeScannerMain" />
+			<section name="common">
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Implementation-Vendor" value="Charles Roth" />
+				<attribute name="Implementation-Version" value="${timestamp}" />
+			</section>
+		</manifest>
+	</target>
+
+	<!-- ================== target: jar ============================= -->
+	<target name="jar"
+		    depends="compile, jar-properties"
+	        description="Create jar with MANIFEST.MF">
+		<unzip dest="${classes.dir}">
+			<fileset refid="runtime-jars"/>
+		</unzip>
+		<jar jarfile="${build.dir}/${ant.project.name}.jar" manifest="MANIFEST.MF">
+			<fileset dir="${classes.dir}" />
+			<fileset dir="${resource.dir}">
+				<include name="*.*" />
+			</fileset>
+			<fileset dir="${java.dir}">
+				<include name="META-INF/*.*" />
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- target: clean -->
+	<target name="clean" description="--> clean the project">
+		<delete dir="${build.dir}" />
+		<delete dir="${coverage.dir}" />
+		<delete dir="${out.instr.dir}" />
+	</target>
+
+</project>

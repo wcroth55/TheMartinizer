@@ -1,0 +1,44 @@
+diff --git a/WebApp/src/main/java/com/caucus/apps/onesearch/components/search/BasicSearchBox.java b/WebApp/src/main/java/com/caucus/apps/onesearch/components/search/BasicSearchBox.java
+index 6665058..0836a49 100644
+--- a/WebApp/src/main/java/com/caucus/apps/onesearch/components/search/BasicSearchBox.java
++++ b/WebApp/src/main/java/com/caucus/apps/onesearch/components/search/BasicSearchBox.java
+@@ -694,15 +694,15 @@ public class BasicSearchBox extends SearchBoxBase implements SearchTermsListener
+      return query;
+~
+   }
+~
+   private QueryData copyAdvancedParameters(QueryData query) {
+~
+      if
+-(this.queryData
++(queryData
+  != null) {
+~
+         if
+-(this.queryData.getSearchParameter(SearchEngine.SEARCHPARAM_DATE)
++(queryData.getSearchParameter(SearchEngine.SEARCHPARAM_DATE)
+  != null) {
+-final
+
+~
+            String date = this.queryData.getSearchParameter(SearchEngine.SEARCHPARAM_DATE);
+~
+            query.addSearchParameter(SearchEngine.SEARCHPARAM_DATE, date);
+~
+            notifyAdded(SearchTermType.CUSTOM_TYPE, date);
+~
+         }
+~
+         // Numeric ranges
+~
+         if (this.queryData.getSearchParameter(SearchEngine.SEARCHPARAM_RANGE_LIMIT) != null) {
+~
+-final
+            String range = this.queryData.getSearchParameter(SearchEngine.SEARCHPARAM_RANGE_LIMIT);
+~
+            query.addSearchParameter(SearchEngine.SEARCHPARAM_RANGE_LIMIT, range);
+~
+            notifyAdded(SearchTermType.DATERANGE, range);
+~
+         }
+~
