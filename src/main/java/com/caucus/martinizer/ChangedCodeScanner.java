@@ -24,12 +24,12 @@ public class ChangedCodeScanner
 		this.sourceJavaDir = sourceJavaDir;
 	}
 	
-	public List<String> processGitDiffLines (BufferedReader reader, String ... onlyTheseProjects) {
+	public List<String> processGitDiffLines (BufferedReader reader, List<String> onlyTheseProjects) {
 		List<String> results = new ArrayList<String>();
 		String line;
 		DiffState state = Unknown;
 		
-		ClassChangeRecord changeRecord = new ClassChangeRecord("", sourceJavaDir);
+		ClassChangeRecord changeRecord = new ClassChangeRecord("", sourceJavaDir, onlyTheseProjects);
 		int lineNumber = 0;
 		boolean onlyMinus = true;      // was this line simply deleted?
 		boolean lineChanged = false;   // was this line changed?

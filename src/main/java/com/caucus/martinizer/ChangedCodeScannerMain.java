@@ -2,6 +2,8 @@ package com.caucus.martinizer;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,7 +23,7 @@ import java.util.List;
  *    with multiple sub-projects: but I'm only interested in the CoreLibrary and WebApp sub-projects:
  * 
  *       git diff --word-diff=porcelain old-commit-hash new-commit-hash | \
- *          java -jar ChangedCodeScanner.jar CoreLibrary WebApp
+ *          java -jar ChangedCodeScanner.jar src/main/java CoreLibrary WebApp
  *       
  *    produces output like:
  *       CoreLibrary com.caucus.apps.corelib.search.impl SearchEngineImpl 45 46 47 83 205
@@ -36,7 +38,7 @@ import java.util.List;
  *       
  * Notes:
  *    1. Only classes in the sub-projects listed on the command line are included (no matter what git reported).
- *    2. Test classes are ignored.  See ClassChangeRecord for the definition of test classes.
+ *    2. Anything outside the source directory (e.g. src/main/java) is ignored, e.g. unit-tests in /src/test/java.
  *    3. Non-java files are ignored.
  *    
  * Purpose:
@@ -66,15 +68,18 @@ public class ChangedCodeScannerMain
 
 	public static void main(String[] args) {
 		if (args.length == 0) {
-			System.err.println("Usage: java -jar ChangedCodeScanner.jar /src/main/java");
-			System.err.println("    (or substitute partial directory structure for your project for /src/main/java)");
+			System.err.println("Usage: java -jar ChangedCodeScanner.jar src/main/java [subProject1 subProject2 ...]");
+			System.err.println("    (or substitute partial directory structure for your project for src/main/java)");
 			System.exit(1);
 		}
 		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		ChangedCodeScanner codeScanner = new ChangedCodeScanner(args[0]);
 		
-		List<String> results = codeScanner.processGitDiffLines(reader, args);
+		List<String> subProjects = new ArrayList<String>(Arrays.asList(args));
+		subProjects.remove(0);
+		
+		List<String> results = codeScanner.processGitDiffLines(reader, subProjects);
 		for (String result: results) {
 			System.out.println(result);
 		}

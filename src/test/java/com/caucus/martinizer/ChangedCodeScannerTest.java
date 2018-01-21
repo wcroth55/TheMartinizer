@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
@@ -16,18 +17,25 @@ import com.caucus.martinizer.ChangedCodeScanner;
 
 public class ChangedCodeScannerTest
 {
+	private static final String SRC_JAVA_DIR = "src/main/java";
+	
 	private ChangedCodeScanner scanner;
+	private List<String> subProjects;
 	
 	@Before
 	public void setUp() {
-		scanner = new ChangedCodeScanner("/src/main/java");
+		scanner = new ChangedCodeScanner(SRC_JAVA_DIR);
+		subProjects = new ArrayList<String>();
+		subProjects.add("CoreLibrary");
+		subProjects.add("WebApp");
+		
 	}
 	
 	@Ignore // Not sure what's going on here... new results seem more correct than old results!
 	@Test
 	public void shouldRunTest1andMatchExpectedResultsFromFile() {
 		BufferedReader reader = getResourceAsBufferedReader("test1.txt");
-		List<String> results = scanner.processGitDiffLines(reader, "CoreLibrary", "WebApp");
+		List<String> results = scanner.processGitDiffLines(reader, subProjects);
 		
 		BufferedReader expected = getResourceAsBufferedReader("results1.txt");
 		int resultCounter = 0;
@@ -48,7 +56,7 @@ public class ChangedCodeScannerTest
 	@Test
 	public void shouldRunTest2andMatchExpectedResults() {
 		BufferedReader reader = getResourceAsBufferedReader("test2.txt");
-		List<String> results = scanner.processGitDiffLines(reader, "CoreLibrary", "WebApp");
+		List<String> results = scanner.processGitDiffLines(reader, subProjects);
 		
 		assertEquals (1, results.size());
 		assertEquals ("WebApp com.caucus.apps.onesearch.components.search BasicSearchBox 697 698 705", 
@@ -58,7 +66,7 @@ public class ChangedCodeScannerTest
 	@Test
 	public void shouldRunTest3andMatchExpectedResults() {
 		BufferedReader reader = getResourceAsBufferedReader("test3.txt");
-		List<String> results = scanner.processGitDiffLines(reader, "CoreLibrary", "WebApp");
+		List<String> results = scanner.processGitDiffLines(reader, subProjects);
 		
 		assertEquals (1, results.size());
 		assertEquals ("WebApp com.caucus.apps.onesearch.components PageLayout 340 341 342 343 344 345 348",

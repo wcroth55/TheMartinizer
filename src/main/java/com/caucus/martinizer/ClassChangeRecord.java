@@ -1,6 +1,7 @@
 package com.caucus.martinizer;
 
-import org.apache.commons.lang.ArrayUtils;
+import java.util.List;
+
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -30,13 +31,13 @@ public class ClassChangeRecord
 	 * @param keepOnlyTheseProjects varargs array of subprojects we're interested in.
 	 *        If empty, there's only one project, no sub-projects.
 	 */
-	public ClassChangeRecord (String line, String sourceJavaDir, String ... keepOnlyTheseProjects) {
+	public ClassChangeRecord (String line, String sourceJavaDir, List<String> keepOnlyTheseProjects) {
 		lineNumbers = new StringBuffer();
 		projectName = "";
 		String [] temp = StringUtils.split(line, " ");
-		if (temp == null  ||  temp.length < 4  ||  ! temp[3].contains(sourceJavaDir))  isValid = false;
+		if (temp == null  ||  temp.length < 4  ||  (! temp[3].contains(sourceJavaDir)))  isValid = false;
 		else {
-			projectName = (ArrayUtils.isEmpty(keepOnlyTheseProjects) ? "." : StringUtils.substringBetween(temp[3], "b/", "/"));
+			projectName = keepOnlyTheseProjects.isEmpty() ? "." : StringUtils.substringBetween(temp[3], "b/", "/");
 			packageName = StringUtils.substringAfter (temp[3], sourceJavaDir + "/");
 			packageName = StringUtils.substringBeforeLast(packageName, "/");
 			packageName = packageName.replace("/", ".");
@@ -46,13 +47,11 @@ public class ClassChangeRecord
 			className = StringUtils.substringBefore(className, ".java");
 		}
 		
-		if (! projectIsIn (keepOnlyTheseProjects))
-			isValid = false;
-		
+		if (! projectIsIn (keepOnlyTheseProjects)) isValid = false;
 	}
 	
-	private boolean projectIsIn (String ... keepers) {
-		if (ArrayUtils.isEmpty(keepers))    return true;
+	private boolean projectIsIn (List<String> keepers) {
+		if (keepers.isEmpty())              return true;
 		for (String keeper: keepers) {
 			if (projectName.equals(keeper)) return true;
 		}
