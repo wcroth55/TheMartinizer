@@ -10,19 +10,22 @@
 #   The Martinizer assumes:
 #      1. You are in the top-level directory of a checked-out-from-git
 #         Java project.
-#      2. Your source directories end in "/java/" followed by the 
-#         package structure (e.g. "src/main/java/com/mycompany").
-#      3. You have the hash of the earlier commit you want to compare to.
+#      2. You have the hash of the earlier commit you want to compare to.
+#      3. All of your 'production' (non-test) code is underneath a 
+#         particular source directory, e.g. src/main/java
 #      4. You have just run the unit-tests with Jacoco code-coverage
 #         turned on, and run the Jacoco report with HTML output.
 #         The output must be in a sub-directory called "coverage".
 #
-#   The Martinizer then compares the git log of the current check-out
+#   Sample usage:
+#      martinizer old-hash src/main/java
+#
+#   The Martinizer compares the git log of the current check-out
 #   with the earlier hash, and cross-references it with the Jacoco output.
 #   It then displays (on stdout) the lines that have been added or changed 
 #   that are NOT fully covered by unit-tests.
 #
-#   This script depends on the separate Java project TheMartinizer,
+#   This script depends on the Java program ChangedCodeScanner,
 #   which must have been built into a jar and deployed in the same
 #   directory as this script.  (It just reformats the git output into
 #   a more useable format.)
@@ -31,18 +34,20 @@
 #   specify the space-separated list of sub-projects you want to examine
 #   on the end of the martinizer command line.  If you only specify the
 #   old hash, then the Martinizer looks at everything in the project
-#   that is a java file.  (It ignores unit-test classes: see ClassChangeRecord
-#   in TheMartinizer project for details.)
+#   that is a java file that is underneath your "source java directory(s)".
 #
 #   This script is released as "open source", as part of the entire TheMartinizer
 #   package.  See the LICENSE file for details.
+#
+#   For more information, see my blog post on The Martinizer at:
+#   http://lookfar.caucus.com/index.php/2018/01/16/unit-testing-the-martinizer/
 #
 #   Charles Roth 2014-12-29  (original Cobertura version)
 #   Charles Roth 2018-01-02  (Jacoco version, expanded and made more flexible, and published)
 #--------------------------------------------------------------------------
 
-if test "x$1" = "x"; then
-   echo "Usage: martinizer old-hash [sub-project1 sub-project2 ...]" >&2
+if test "x$2" = "x"; then
+   echo "Usage: martinizer old-hash src/main/java [sub-project1 sub-project2 ...]" >&2
    exit
 fi
 
@@ -50,9 +55,11 @@ bin=`dirname $0`
 oldhash="$1"
 shift
 newhash=`git rev-parse HEAD`
+srcJavaDir="$1"
+shift
 
 git diff --word-diff=porcelain $oldhash $newhash  | \
-   (cd $bin; java -jar TheMartinizer.jar $@) | \
+   (cd $bin; java -jar ChangedScodeScanner.jar $srcJavaDir $@) | \
    (while read project package class lines; do
        found=""
        for line in $lines; do
@@ -67,7 +74,7 @@ git diff --word-diff=porcelain $oldhash $newhash  | \
           echo "$package $class:"
           path=`echo "$package" | sed "s/\./\//g"`
           for line in $found; do
-             text=`sed "${line}q;d" $project/src/main/java/$path/$class.java`
+             text=`sed "${line}q;d" $project/$srcJavaDir/$path/$class.java`
              echo "$line $text" | tr -d "\r"
           done
        fi

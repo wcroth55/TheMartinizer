@@ -18,9 +18,6 @@ import org.apache.commons.lang.StringUtils;
 
 public class ClassChangeRecord
 {
-	private static final String [] TEST_CLASS_DIRECTORIES 
-			= {"/src/test/java", "/src/integration/java", "/src/slowtest/java", "/src/regression/java"};
-	
 	private String projectName;
 	private String packageName;
 	private String className;
@@ -33,14 +30,14 @@ public class ClassChangeRecord
 	 * @param keepOnlyTheseProjects varargs array of subprojects we're interested in.
 	 *        If empty, there's only one project, no sub-projects.
 	 */
-	public ClassChangeRecord (String line, String ... keepOnlyTheseProjects) {
+	public ClassChangeRecord (String line, String sourceJavaDir, String ... keepOnlyTheseProjects) {
 		lineNumbers = new StringBuffer();
 		projectName = "";
 		String [] temp = StringUtils.split(line, " ");
-		if (temp == null  ||  temp.length < 4  ||  isTestDirectory(temp[3]))  isValid = false;
+		if (temp == null  ||  temp.length < 4  ||  ! temp[3].contains(sourceJavaDir))  isValid = false;
 		else {
 			projectName = (ArrayUtils.isEmpty(keepOnlyTheseProjects) ? "." : StringUtils.substringBetween(temp[3], "b/", "/"));
-			packageName = StringUtils.substringAfter (temp[3], "/java/");
+			packageName = StringUtils.substringAfter (temp[3], sourceJavaDir + "/");
 			packageName = StringUtils.substringBeforeLast(packageName, "/");
 			packageName = packageName.replace("/", ".");
 			className = StringUtils.substringAfterLast(temp[3], "/");
@@ -52,11 +49,6 @@ public class ClassChangeRecord
 		if (! projectIsIn (keepOnlyTheseProjects))
 			isValid = false;
 		
-	}
-	
-	private boolean isTestDirectory (String path) {
-		for (String testDir: TEST_CLASS_DIRECTORIES)  if (path.contains(testDir))  return true;
-		return false;
 	}
 	
 	private boolean projectIsIn (String ... keepers) {

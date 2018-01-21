@@ -18,12 +18,18 @@ public class ChangedCodeScanner
 		Code      // In the midst of actual code.
 	}
 	
+	private String sourceJavaDir;
+	
+	public ChangedCodeScanner (String sourceJavaDir) {
+		this.sourceJavaDir = sourceJavaDir;
+	}
+	
 	public List<String> processGitDiffLines (BufferedReader reader, String ... onlyTheseProjects) {
 		List<String> results = new ArrayList<String>();
 		String line;
 		DiffState state = Unknown;
 		
-		ClassChangeRecord changeRecord = new ClassChangeRecord("");
+		ClassChangeRecord changeRecord = new ClassChangeRecord("", sourceJavaDir);
 		int lineNumber = 0;
 		boolean onlyMinus = true;      // was this line simply deleted?
 		boolean lineChanged = false;   // was this line changed?
@@ -40,7 +46,7 @@ public class ChangedCodeScanner
 			// Handle before the first 'diff', plus any non-java files.
 			if (state == Unknown) {
 				if (line.startsWith("diff")) {
-					changeRecord = new ClassChangeRecord(line, onlyTheseProjects);
+					changeRecord = new ClassChangeRecord(line, sourceJavaDir, onlyTheseProjects);
 					state = changeRecord.isValid() ? Diff : Unknown;
 				}
 			}
@@ -89,7 +95,7 @@ public class ChangedCodeScanner
 					if (changeRecord.isValid()  &&  changeRecord.hasLineNumbers())
 						results.add(changeRecord.toString());
 					
-					changeRecord = new ClassChangeRecord(line, onlyTheseProjects);
+					changeRecord = new ClassChangeRecord(line, sourceJavaDir, onlyTheseProjects);
 					state = changeRecord.isValid() ? Diff : Unknown;
 				}
 			}

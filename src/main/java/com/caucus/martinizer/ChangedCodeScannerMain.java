@@ -5,11 +5,11 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 /**
- * TheMartinizer:  find lines that changed in important Java classes between two commits to a project. 
+ * ChangedCodeScanner:  find lines that changed in important Java classes between two commits to a project. 
  * 
  * Usage:
  *    Simple example:
- *       git diff --word-diff=porcelain old-commit-hash new-commit-hash | java -jar ChangedCodeScanner.jar
+ *       git diff --word-diff=porcelain old-commit-hash new-commit-hash | java -jar ChangedCodeScanner.jar /src/main/java
  *       
  *    produces output like:
  *       src com.caucus.javautils.io PqHttpClient 167 176
@@ -65,8 +65,14 @@ public class ChangedCodeScannerMain
 {
 
 	public static void main(String[] args) {
+		if (args.length == 0) {
+			System.err.println("Usage: java -jar ChangedCodeScanner.jar /src/main/java");
+			System.err.println("    (or substitute partial directory structure for your project for /src/main/java)");
+			System.exit(1);
+		}
+		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		ChangedCodeScanner codeScanner = new ChangedCodeScanner();
+		ChangedCodeScanner codeScanner = new ChangedCodeScanner(args[0]);
 		
 		List<String> results = codeScanner.processGitDiffLines(reader, args);
 		for (String result: results) {

@@ -20,7 +20,7 @@ public class ChangedCodeScannerTest
 	
 	@Before
 	public void setUp() {
-		scanner = new ChangedCodeScanner();
+		scanner = new ChangedCodeScanner("/src/main/java");
 	}
 	
 	@Ignore // Not sure what's going on here... new results seem more correct than old results!
