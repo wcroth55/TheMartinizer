@@ -16,6 +16,8 @@
 #   Charles Roth, 2018-01-05
 #------------------------------------------------------------------
 
+srcJavaDir="src/main/java"
+
 if test "x$2" = "x"; then
    echo "Usage: runMartinizer projectName emailAddress" >&2
    exit
@@ -59,7 +61,7 @@ echo "$newHash"    >_oldHash
 #---Send Martinizer report, if any changed lines were not covered by tests.
 tmpMartin=/tmp/Martin$$
 rm -f $tmpMartin
-$HOME/bin/martinizer $oldHash >$tmpMartin
+$HOME/bin/martinizer $oldHash $srcJavaDir >$tmpMartin
 if test -s $tmpMartin; then
    (echo "$1 Martinizer report on changed code not covered by unit-tests:"
     echo ""

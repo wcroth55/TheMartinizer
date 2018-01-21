@@ -18,7 +18,7 @@
 #         The output must be in a sub-directory called "coverage".
 #
 #   Sample usage:
-#      martinizer old-hash src/main/java
+#      martinizer old-hash src/main/java [optional-sub-projects...]
 #
 #   The Martinizer compares the git log of the current check-out
 #   with the earlier hash, and cross-references it with the Jacoco output.
@@ -31,10 +31,13 @@
 #   a more useable format.)
 #
 #   If your project has "sub-projects" underneath it, you may also
-#   specify the space-separated list of sub-projects you want to examine
-#   on the end of the martinizer command line.  If you only specify the
-#   old hash, then the Martinizer looks at everything in the project
-#   that is a java file that is underneath your "source java directory(s)".
+#   specify the space-separated list of sub-projects you want to examine,
+#   on the end of the martinizer command line.  Otherwise, the Martinizer 
+#   looks at everything in the project that is a java file.
+#
+#   (Note that the Martinizer only looks at code underneath your "source java directory"(s),
+#   in the project or in each sub-project.  This prevents it from scanning, say, your
+#   unit-tests, which should be in a different directory, e.g. src/test/java.)
 #
 #   This script is released as "open source", as part of the entire TheMartinizer
 #   package.  See the LICENSE file for details.
@@ -59,7 +62,7 @@ srcJavaDir="$1"
 shift
 
 git diff --word-diff=porcelain $oldhash $newhash  | \
-   (cd $bin; java -jar ChangedScodeScanner.jar $srcJavaDir $@) | \
+   (cd $bin; java -jar ChangedCodeScanner.jar $srcJavaDir $@) | \
    (while read project package class lines; do
        found=""
        for line in $lines; do
